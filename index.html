@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة متابعة العقود وجداول الكميات — مركز وقاء</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body data-palette="#0B7A4B,#C6511C,#2E6FB0,#AE861C,#9358C4,#0E8F82,#67A62D">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="app-header">
+    <div class="brand">
+      <img id="brandLogo" class="brand-logo" alt="مركز وقاء — WEQAA Center" />
+      <div class="brand-titles">
+        <h1 class="app-title" data-i18n="appTitle">لوحة متابعة العقود وجداول الكميات</h1>
+        <p class="app-sub" data-i18n="appSub">المركز الوطني للوقاية من الآفات النباتية والأمراض الحيوانية</p>
+      </div>
+    </div>
+    <div class="header-tools">
+      <span class="asof" id="asOf"></span>
+      <button class="tool-btn" id="langToggle" type="button" title="English / عربي">EN</button>
+      <button class="tool-btn" id="themeToggle" type="button" title="الوضع الليلي">
+        <span class="theme-ico">☾</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===================== KPI ROW ===================== -->
+  <section class="kpi-row" id="kpiRow" aria-label="مؤشرات الأداء الرئيسية"></section>
+
+  <!-- ===================== FILTER BAR ===================== -->
+  <section class="filter-bar" id="filterBar" aria-label="عوامل التصفية">
+    <div class="filter-group status-seg">
+      <div class="seg" role="tablist" id="statusSeg">
+        <button class="seg-btn is-active" data-status="all" data-i18n="stAll">الكل</button>
+        <button class="seg-btn" data-status="boq" data-i18n="stBoq">عقود جارية</button>
+        <button class="seg-btn" data-status="completed" data-i18n="stDone">مشاريع مكتملة</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="fSector">القطاع</label>
+      <div class="ms" id="fSector" data-field="sector"></div>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="fDomain">المجال الرئيسي</label>
+      <div class="ms" id="fDomain" data-field="mainDomain"></div>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="fDept">الإدارة المالكة</label>
+      <div class="ms" id="fDept" data-field="dept"></div>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="fCompany">الشركة المنفذة</label>
+      <div class="ms" id="fCompany" data-field="company"></div>
+    </div>
+    <div class="filter-group grow">
+      <label data-i18n="fYear">سنة بداية العقد</label>
+      <div class="year-range" id="yearRange"></div>
+    </div>
+    <button class="reset-btn" id="resetBtn" type="button" data-i18n="reset">إعادة تعيين</button>
+  </section>
+
+  <main class="content">
+    <!-- ===================== TRENDS ===================== -->
+    <h2 class="section-h" data-i18n="secTrends">الاتجاه الزمني</h2>
+    <div class="grid">
+      <figure class="card span-2">
+        <figcaption class="card-h">
+          <span data-i18n="c_burn">القيمة المتعاقد عليها مقابل المنفذة (تراكمي حسب شهر البداية)</span>
+        </figcaption>
+        <div class="chart" id="chartBurn"></div>
+      </figure>
+      <figure class="card">
+        <figcaption class="card-h"><span data-i18n="c_newc">عدد العقود المبدوءة عبر الزمن</span></figcaption>
+        <div class="chart" id="chartNewContracts"></div>
+      </figure>
+    </div>
+
+    <!-- ===================== COMPARISONS ===================== -->
+    <h2 class="section-h" data-i18n="secCompare">المقارنات</h2>
+    <div class="grid">
+      <figure class="card">
+        <figcaption class="card-h"><span data-i18n="c_sector">القيمة حسب القطاع (متعاقد / منفذ / متبقٍ)</span></figcaption>
+        <div class="chart" id="chartSector"></div>
+      </figure>
+      <figure class="card">
+        <figcaption class="card-h"><span data-i18n="c_dept">نسبة التنفيذ حسب الإدارة المالكة</span></figcaption>
+        <div class="chart" id="chartDept"></div>
+      </figure>
+      <figure class="card">
+        <figcaption class="card-h"><span data-i18n="c_domain">توزيع الإنفاق حسب المجال الرئيسي</span></figcaption>
+        <div class="chart donut-chart" id="chartDomain"></div>
+      </figure>
+      <figure class="card">
+        <figcaption class="card-h"><span data-i18n="c_sub">أكبر المجالات الفرعية بالقيمة</span></figcaption>
+        <div class="chart" id="chartSub"></div>
+      </figure>
+      <figure class="card">
+        <figcaption class="card-h"><span data-i18n="c_contractor">أعلى 10 شركات بقيمة المنفذ</span></figcaption>
+        <div class="chart" id="chartContractors"></div>
+      </figure>
+      <figure class="card">
+        <figcaption class="card-h"><span data-i18n="c_remsector">الميزانية المتبقية حسب القطاع</span></figcaption>
+        <div class="chart" id="chartRemSector"></div>
+      </figure>
+      <figure class="card span-2">
+        <figcaption class="card-h"><span data-i18n="c_progress">تقدم تنفيذ العقود (أعلى 12 عقداً بالقيمة)</span></figcaption>
+        <div class="chart" id="chartProgress"></div>
+      </figure>
+      <figure class="card">
+        <figcaption class="card-h">
+          <span data-i18n="c_scatter">القيمة مقابل نسبة التنفيذ</span>
+          <span class="card-hint" data-i18n="c_scatter_h">حجم الفقاعة = المتبقي</span>
+        </figcaption>
+        <div class="chart" id="chartScatter"></div>
+      </figure>
+      <figure class="card span-3">
+        <figcaption class="card-h"><span data-i18n="c_gantt">الجدول الزمني للعقود (البداية ← النهاية)</span></figcaption>
+        <div class="chart" id="chartGantt"></div>
+      </figure>
+    </div>
+
+    <!-- ===================== INSIGHTS ===================== -->
+    <h2 class="section-h" data-i18n="secInsights">أبرز الملاحظات</h2>
+    <section class="insights" id="insights" aria-live="polite"></section>
+
+    <!-- ===================== TABLE ===================== -->
+    <h2 class="section-h" data-i18n="secTable">تفاصيل البنود</h2>
+    <div class="card table-card">
+      <div class="table-tools">
+        <input type="search" id="tableSearch" class="tbl-search" data-i18n-ph="searchPh" placeholder="بحث في البنود والمشاريع والشركات…" />
+        <span class="row-count" id="rowCount"></span>
+        <button class="reset-btn" id="csvBtn" type="button" data-i18n="csv">تصدير CSV</button>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="dataTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="table-pager">
+        <button class="pg-btn" id="pgPrev" type="button">‹</button>
+        <span id="pgInfo"></span>
+        <button class="pg-btn" id="pgNext" type="button">›</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <span data-i18n="footer">لوحة تفاعلية — مبنية من بيانات جداول الكميات والمشاريع المكتملة · مركز وقاء</span>
+  </footer>
+
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+  <script src="assets/logo.js"></script>
+  <script src="assets/data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
