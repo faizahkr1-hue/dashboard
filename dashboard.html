@@ -105,6 +105,20 @@ body{font-family:'Tajawal',sans-serif;background:var(--off);color:var(--text);di
 .kpi-label{font-size:12px;font-weight:600;color:var(--muted)}
 .kpi-badge{display:inline-block;margin-top:8px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:var(--green-20);color:var(--green)}
 .badge-lime{background:var(--lime-20);color:#4a6a10}.badge-orange{background:var(--orange-20);color:#8a3010}.badge-navy{background:var(--navy-20);color:var(--navy)}.badge-gray{background:var(--gray-20);color:#4a5560}
+/* contract status */
+.cs-tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:0;background:var(--off);border:1px solid var(--border);border-radius:12px;padding:16px 6px;margin-bottom:14px}
+.cs-tile{text-align:center;padding:2px 6px;border-left:1px solid var(--border)}
+.cs-tile:last-child{border-left:none}
+.cs-num{font-size:26px;font-weight:900;line-height:1.1}
+.cs-lbl{font-size:11px;color:var(--muted);font-weight:700;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:5px}
+.cs-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.cs-sub{font-size:9px;color:var(--muted);margin-top:2px}
+.cs-bar{display:flex;height:40px;border-radius:9px;overflow:hidden;box-shadow:var(--shadow)}
+.cs-seg{display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;min-width:3px;transition:width .3s}
+.cs-seg span{white-space:nowrap;padding:0 8px;overflow:hidden;text-overflow:ellipsis}
+.cs-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cs-leg{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;display:flex;align-items:center;gap:5px}
+@media(max-width:900px){.cs-tiles{grid-template-columns:repeat(3,1fr);gap:10px}.cs-tile{border-left:none}}
 /* card */
 .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
 .card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
@@ -222,6 +236,10 @@ tbody tr:hover{background:var(--green-20)}
 
   <div id="panel-overview" class="panel active">
     <div class="kpi-grid" id="kpi-row"></div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-icon icon-navy">📅</div><div><div class="card-title" id="cs-title">حالة العقود — معامل الأداء الزمني</div><div class="card-sub">معامل الأداء = الإنجاز المالي الفعلي ÷ نسبة الوقت المنقضي &nbsp;·&nbsp; ≥80% على المسار &nbsp;·&nbsp; 50–79% متأخر &nbsp;·&nbsp; &lt;50% متأخر جداً &nbsp;·&nbsp; فترة سماح 60 يوماً للعقود الحديثة</div></div></div>
+      <div id="cs-body"></div>
+    </div>
     <div class="g2">
       <div class="card"><div class="card-hdr"><div class="card-icon icon-navy">📊</div><div><div class="card-title">توزيع البنود حسب الحالة</div><div class="card-sub">عدد البنود في كل حالة تنفيذ</div></div></div><div class="chart-box"><canvas id="statusChart"></canvas></div></div>
       <div class="card"><div class="card-hdr"><div class="card-icon icon-green">🗂️</div><div><div class="card-title">الإنجاز حسب المجال الرئيسي</div><div class="card-sub">القيمة المنفَّذة مقابل الإجمالية (م.ر)</div></div></div><div class="chart-box"><canvas id="domainChart"></canvas></div></div>
@@ -365,6 +383,7 @@ function applyFilters(){
   el('match-count').textContent='عدد البنود المطابقة: '+fmtN(t.n)+' بند · '+t.contractCount+' عقد';
   renderKPIs(t);
   renderHeader(t);
+  renderContractStatus(view);
   renderStatusChart(view);
   renderDomainChart(view);
   renderTopItems(view);
@@ -406,6 +425,45 @@ function renderHR(view){
     h+='<tr><td>'+esc(clip(r.item,42))+'</td><td>'+esc(r.sub)+'</td><td>'+esc(clip(r.company,22))+'</td><td>'+fmtDate(r.start)+'</td><td>'+fmtDate(r.end)+'</td><td>'+(r.total/1e6).toFixed(2)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
   if(!rows.length)h+='<tr><td colspan="8" class="empty">لا توجد بنود موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
   el('hrTable').innerHTML=h+'</tbody>';
+}
+/* ---- حالة العقود (معامل الأداء الزمني) ---- */
+var CS_META=[
+  {key:'done',lbl:'مكتمل',color:'#05764A',dot:'✔'},
+  {key:'endedIncomplete',lbl:'منتهٍ غير مكتمل',color:'#304258',dot:'●'},
+  {key:'closing',lbl:'قيد الإغلاق',color:'#2f6db5',dot:'●'},
+  {key:'newStart',lbl:'حديث البدء',color:'#94C245',dot:'⏱'},
+  {key:'onTrack',lbl:'على المسار',color:'#3A9068',dot:'✅'},
+  {key:'late',lbl:'متأخر',color:'#D05418',dot:'●'},
+  {key:'veryLate',lbl:'متأخر جداً',color:'#C0170A',dot:'●'}
+];
+function parseD(s){if(!s)return null;var p=String(s).slice(0,10).split('-');if(p.length!==3||p[0].length!==4)return null;var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));return isNaN(d.getTime())?null:d;}
+function contractStatus(c,today){
+  var comp=c.total>0?c.exec/c.total*100:0;
+  var s=parseD(c.start),e=parseD(c.end);
+  if(comp>=98)return 'done';
+  if(e&&today>=e)return 'endedIncomplete';
+  if(comp>=90)return 'closing';
+  if(s&&(today-s)/86400000<=60)return 'newStart';
+  if(s&&e&&e>s){var el=(today-s)/(e-s)*100;if(el<=0)return 'newStart';var f=comp/el;if(f>=0.8)return 'onTrack';if(f>=0.5)return 'late';return 'veryLate';}
+  return comp>=50?'onTrack':(comp>=25?'late':'veryLate');
+}
+var AR_MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+function renderContractStatus(view){
+  var now=new Date();var today=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()));
+  var g={};
+  view.forEach(function(r){var c=r.contract||'—';if(!g[c])g[c]={total:0,exec:0,start:r.start,end:r.end};
+    g[c].total+=r.total;g[c].exec+=r.exec;
+    if(r.start&&(!g[c].start||r.start<g[c].start))g[c].start=r.start;
+    if(r.end&&(!g[c].end||r.end>g[c].end))g[c].end=r.end;});
+  var counts={},totalC=0;CS_META.forEach(function(m){counts[m.key]=0;});
+  Object.keys(g).forEach(function(c){counts[contractStatus(g[c],today)]++;totalC++;});
+  el('cs-title').textContent='حالة العقود — معامل الأداء الزمني ('+AR_MONTHS[today.getUTCMonth()]+' '+today.getUTCFullYear()+')';
+  var tiles=CS_META.map(function(m){var sub=m.key==='veryLate'?'<div class="cs-sub">معامل أقل من 50%</div>':(m.key==='onTrack'?'<div class="cs-sub">معامل ≥ 80%</div>':'<div class="cs-sub">&nbsp;</div>');
+    return '<div class="cs-tile"><div class="cs-num" style="color:'+m.color+'">'+counts[m.key]+'</div><div class="cs-lbl"><span class="cs-dot" style="background:'+m.color+'"></span>'+m.lbl+'</div>'+sub+'</div>';}).join('');
+  var bar=CS_META.filter(function(m){return counts[m.key]>0;}).map(function(m){var w=totalC?counts[m.key]/totalC*100:0;
+    return '<div class="cs-seg" style="width:'+w+'%;background:'+m.color+'" title="'+m.lbl+': '+counts[m.key]+'">'+(w>7?'<span>'+m.lbl+' '+counts[m.key]+'</span>':'')+'</div>';}).join('');
+  var legend=CS_META.map(function(m){return '<span class="cs-leg" style="background:'+m.color+'1a;color:'+m.color+'"><span class="cs-dot" style="background:'+m.color+'"></span>'+m.lbl+' ('+counts[m.key]+')</span>';}).join('');
+  el('cs-body').innerHTML='<div class="cs-tiles">'+tiles+'</div><div class="cs-bar">'+bar+'</div><div class="cs-legend">'+legend+'</div>';
 }
 function renderHeader(t){
   el('hdr-stats').textContent=fmtN(t.n)+' بند  |  '+t.contractCount+' عقد';
