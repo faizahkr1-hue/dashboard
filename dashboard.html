@@ -119,20 +119,18 @@ body{font-family:'Tajawal',sans-serif;background:var(--off);color:var(--text);di
 .cs-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .cs-leg{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;display:flex;align-items:center;gap:5px}
 @media(max-width:900px){.cs-tiles{grid-template-columns:repeat(3,1fr);gap:10px}.cs-tile{border-left:none}}
-/* pacing (على المسار؟) */
-.pace-wrap{display:grid;grid-template-columns:210px 1fr;gap:22px;align-items:center}
-.pace-badge{text-align:center;padding:16px 12px;border-radius:12px;border:1px solid var(--border)}
-.pace-factor{font-size:36px;font-weight:900;line-height:1}
-.pace-verdict{font-size:15px;font-weight:800;margin-top:4px}
-.pace-badge small{display:block;font-size:10px;color:var(--muted);margin-top:5px}
-.pace-track{position:relative;height:34px;background:var(--off);border:1px solid var(--border);border-radius:8px;margin:30px 0 10px}
-.pace-fill{position:absolute;right:0;top:0;height:100%;border-radius:7px 0 0 7px;min-width:2px;transition:width .5s}
-.pace-marker{position:absolute;top:-8px;height:50px;width:2px;background:#1A2B22}
-.pace-marker::after{content:attr(data-lbl);position:absolute;top:-19px;right:50%;transform:translateX(50%);white-space:nowrap;font-size:10px;font-weight:800;color:#1A2B22;background:#fff;padding:1px 7px;border-radius:6px;border:1px solid var(--border)}
-.pace-stats{display:flex;flex-wrap:wrap;gap:18px}
-.pace-stat{font-size:12px;color:var(--muted);font-weight:600}
-.pace-stat b{font-size:17px}
-@media(max-width:900px){.pace-wrap{grid-template-columns:1fr}}
+/* pacing — نسخة مبسّطة */
+.pace2-verdict{display:inline-block;font-size:20px;font-weight:900;padding:6px 16px;border-radius:24px;margin-bottom:12px}
+.pace2-sentence{font-size:15px;color:var(--text);line-height:2;margin-bottom:18px}
+.pace2-sentence b{font-weight:800}
+.pace2-bars{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
+.pace2-row{display:grid;grid-template-columns:170px 1fr 58px;align-items:center;gap:14px}
+.pace2-lbl{font-size:13px;font-weight:700;color:var(--text)}
+.pace2-track{height:26px;background:var(--off);border:1px solid var(--border);border-radius:7px;position:relative;overflow:hidden}
+.pace2-fill{position:absolute;right:0;top:0;height:100%;border-radius:7px 0 0 7px;transition:width .5s}
+.pace2-val{font-size:16px;font-weight:900;text-align:left}
+.pace2-rule{font-size:12px;color:var(--muted);background:var(--off);border:1px solid var(--border);border-radius:9px;padding:10px 14px;line-height:1.9}
+@media(max-width:900px){.pace2-row{grid-template-columns:110px 1fr 48px;gap:8px}}
 /* card */
 .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
 .card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
@@ -251,7 +249,7 @@ tbody tr:hover{background:var(--green-20)}
   <div id="panel-overview" class="panel active">
     <div class="kpi-grid" id="kpi-row"></div>
     <div class="card">
-      <div class="card-hdr"><div class="card-icon icon-green">🎯</div><div><div class="card-title">هل المركز على المسار؟ — الأداء مقابل الخطة الزمنية</div><div class="card-sub">مقارنة نسبة الإنجاز الفعلية بالنسبة المتوقَّعة بناءً على الوقت المنقضي من مدد العقود &nbsp;·&nbsp; ≥95% على المسار &nbsp;·&nbsp; 80–94% متأخر قليلاً &nbsp;·&nbsp; &lt;80% متعثّر</div></div></div>
+      <div class="card-hdr"><div class="card-icon icon-green">🎯</div><div><div class="card-title">هل المركز يسير حسب الخطة الزمنية؟</div><div class="card-sub">نقارن ما أُنجز فعلاً بما كان يُفترض إنجازه حتى اليوم بحكم مرور الوقت على مدد العقود</div></div></div>
       <div id="pace-body"></div>
     </div>
     <div class="card">
@@ -460,29 +458,23 @@ function renderPacing(view){
   var expected=startedTotal>0?expSum/startedTotal*100:0;
   var factor=expected>0?actual/expected:0;
   var gap=actual-expected;
-  var verdict,color;
-  if(factor>=0.95){verdict='على المسار';color='#05764A';}
-  else if(factor>=0.80){verdict='متأخر قليلاً';color='#D05418';}
-  else {verdict='متعثّر';color='#C0170A';}
+  var verdict,emoji,color;
+  if(factor>=0.95){verdict='على المسار';emoji='🟢';color='#05764A';}
+  else if(factor>=0.80){verdict='متأخر قليلاً';emoji='🟠';color='#D05418';}
+  else {verdict='متعثّر';emoji='🔴';color='#C0170A';}
+  var behind=gap<-0.05, ahead=gap>0.05;
+  var diff=Math.abs(gap).toFixed(1);
+  var judge=behind?('متأخّر بمقدار <b style="color:'+color+'">'+diff+' نقطة</b> عن الخطة')
+           :ahead?('متقدّم بمقدار <b style="color:#05764A">'+diff+' نقطة</b> على الخطة')
+           :'مطابق تماماً للخطة';
   el('pace-body').innerHTML=
-    '<div class="pace-wrap">'+
-      '<div class="pace-badge" style="background:'+color+'14;border-color:'+color+'55">'+
-        '<div class="pace-factor" style="color:'+color+'">'+Math.round(factor*100)+'%</div>'+
-        '<div class="pace-verdict" style="color:'+color+'">'+verdict+'</div>'+
-        '<small>معامل الأداء = الفعلي ÷ المتوقَّع</small>'+
-      '</div>'+
-      '<div>'+
-        '<div class="pace-track">'+
-          '<div class="pace-fill" style="width:'+actual.toFixed(1)+'%;background:'+color+'"></div>'+
-          '<div class="pace-marker" data-lbl="المتوقَّع '+expected.toFixed(1)+'%" style="right:'+expected.toFixed(1)+'%"></div>'+
-        '</div>'+
-        '<div class="pace-stats">'+
-          '<div class="pace-stat">الإنجاز الفعلي: <b style="color:'+color+'">'+actual.toFixed(1)+'%</b></div>'+
-          '<div class="pace-stat">المتوقَّع (حسب الزمن): <b style="color:#1A2B22">'+expected.toFixed(1)+'%</b></div>'+
-          '<div class="pace-stat">الفجوة: <b style="color:'+(gap>=0?'#05764A':'#C0170A')+'">'+(gap>=0?'+':'')+gap.toFixed(1)+' نقطة</b></div>'+
-        '</div>'+
-      '</div>'+
-    '</div>';
+    '<div class="pace2-verdict" style="background:'+color+'1a;color:'+color+'">'+emoji+' '+verdict+'</div>'+
+    '<div class="pace2-sentence">حتى اليوم — وبحكم مرور الوقت على العقود — كان <b>المفترض</b> إنجاز <b>'+expected.toFixed(0)+'%</b> من قيمة الأعمال، والمُنجَز <b>فعلاً</b> هو <b>'+actual.toFixed(0)+'%</b>. أي أن المركز '+judge+'.</div>'+
+    '<div class="pace2-bars">'+
+      '<div class="pace2-row"><div class="pace2-lbl">المفترض إنجازه الآن</div><div class="pace2-track"><div class="pace2-fill" style="width:'+expected.toFixed(1)+'%;background:#9AA7B2"></div></div><div class="pace2-val" style="color:#5a6b60">'+expected.toFixed(0)+'%</div></div>'+
+      '<div class="pace2-row"><div class="pace2-lbl">المُنجَز فعلاً</div><div class="pace2-track"><div class="pace2-fill" style="width:'+actual.toFixed(1)+'%;background:'+color+'"></div></div><div class="pace2-val" style="color:'+color+'">'+actual.toFixed(0)+'%</div></div>'+
+    '</div>'+
+    '<div class="pace2-rule">📌 القاعدة ببساطة: إذا كان <b>المُنجَز فعلاً</b> مساوياً لـ<b>المفترض</b> أو أكثر ← 🟢 على المسار &nbsp;·&nbsp; أقل منه قليلاً ← 🟠 متأخر قليلاً &nbsp;·&nbsp; أقل منه بكثير ← 🔴 متعثّر.</div>';
 }
 /* ---- حالة العقود (معامل الأداء الزمني) ---- */
 var CS_META=[
