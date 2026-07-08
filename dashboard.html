@@ -106,7 +106,7 @@ body{font-family:'Tajawal',sans-serif;background:var(--off);color:var(--text);di
 .kpi-badge{display:inline-block;margin-top:8px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:var(--green-20);color:var(--green)}
 .badge-lime{background:var(--lime-20);color:#4a6a10}.badge-orange{background:var(--orange-20);color:#8a3010}.badge-navy{background:var(--navy-20);color:var(--navy)}.badge-gray{background:var(--gray-20);color:#4a5560}
 /* contract status */
-.cs-tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:0;background:var(--off);border:1px solid var(--border);border-radius:12px;padding:16px 6px;margin-bottom:14px}
+.cs-tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:0;background:var(--off);border:1px solid var(--border);border-radius:12px;padding:16px 6px;margin-bottom:14px}
 .cs-tile{text-align:center;padding:2px 6px;border-left:1px solid var(--border)}
 .cs-tile:last-child{border-left:none}
 .cs-num{font-size:26px;font-weight:900;line-height:1.1}
@@ -428,21 +428,19 @@ function renderHR(view){
 }
 /* ---- حالة العقود (معامل الأداء الزمني) ---- */
 var CS_META=[
-  {key:'done',lbl:'مكتمل',color:'#05764A',dot:'✔'},
-  {key:'endedIncomplete',lbl:'منتهٍ غير مكتمل',color:'#304258',dot:'●'},
-  {key:'closing',lbl:'قيد الإغلاق',color:'#2f6db5',dot:'●'},
-  {key:'newStart',lbl:'حديث البدء',color:'#94C245',dot:'⏱'},
-  {key:'onTrack',lbl:'على المسار',color:'#3A9068',dot:'✅'},
-  {key:'late',lbl:'متأخر',color:'#D05418',dot:'●'},
-  {key:'veryLate',lbl:'متأخر جداً',color:'#C0170A',dot:'●'}
+  {key:'veryLate',lbl:'متأخر جداً',color:'#C0170A',sub:'معامل أقل من 50%'},
+  {key:'late',lbl:'متأخر',color:'#D05418',sub:'معامل 50–79%'},
+  {key:'onTrack',lbl:'على المسار',color:'#05764A',sub:'معامل ≥ 80%'},
+  {key:'newStart',lbl:'حديث البدء',color:'#94C245',sub:'ضمن 60 يوماً'},
+  {key:'endedIncomplete',lbl:'منتهٍ غير مكتمل',color:'#304258',sub:'انتهت المدة'},
+  {key:'notStarted',lbl:'لم تبدأ',color:'#8896a2',sub:'إنجاز 0%'}
 ];
 function parseD(s){if(!s)return null;var p=String(s).slice(0,10).split('-');if(p.length!==3||p[0].length!==4)return null;var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));return isNaN(d.getTime())?null:d;}
 function contractStatus(c,today){
   var comp=c.total>0?c.exec/c.total*100:0;
   var s=parseD(c.start),e=parseD(c.end);
-  if(comp>=98)return 'done';
-  if(e&&today>=e)return 'endedIncomplete';
-  if(comp>=90)return 'closing';
+  if(comp<=0)return 'notStarted';
+  if(e&&today>=e&&comp<98)return 'endedIncomplete';
   if(s&&(today-s)/86400000<=60)return 'newStart';
   if(s&&e&&e>s){var el=(today-s)/(e-s)*100;if(el<=0)return 'newStart';var f=comp/el;if(f>=0.8)return 'onTrack';if(f>=0.5)return 'late';return 'veryLate';}
   return comp>=50?'onTrack':(comp>=25?'late':'veryLate');
@@ -458,8 +456,8 @@ function renderContractStatus(view){
   var counts={},totalC=0;CS_META.forEach(function(m){counts[m.key]=0;});
   Object.keys(g).forEach(function(c){counts[contractStatus(g[c],today)]++;totalC++;});
   el('cs-title').textContent='حالة العقود — معامل الأداء الزمني ('+AR_MONTHS[today.getUTCMonth()]+' '+today.getUTCFullYear()+')';
-  var tiles=CS_META.map(function(m){var sub=m.key==='veryLate'?'<div class="cs-sub">معامل أقل من 50%</div>':(m.key==='onTrack'?'<div class="cs-sub">معامل ≥ 80%</div>':'<div class="cs-sub">&nbsp;</div>');
-    return '<div class="cs-tile"><div class="cs-num" style="color:'+m.color+'">'+counts[m.key]+'</div><div class="cs-lbl"><span class="cs-dot" style="background:'+m.color+'"></span>'+m.lbl+'</div>'+sub+'</div>';}).join('');
+  var tiles=CS_META.map(function(m){
+    return '<div class="cs-tile"><div class="cs-num" style="color:'+m.color+'">'+counts[m.key]+'</div><div class="cs-lbl"><span class="cs-dot" style="background:'+m.color+'"></span>'+m.lbl+'</div><div class="cs-sub">'+(m.sub||'&nbsp;')+'</div></div>';}).join('');
   var bar=CS_META.filter(function(m){return counts[m.key]>0;}).map(function(m){var w=totalC?counts[m.key]/totalC*100:0;
     return '<div class="cs-seg" style="width:'+w+'%;background:'+m.color+'" title="'+m.lbl+': '+counts[m.key]+'">'+(w>7?'<span>'+m.lbl+' '+counts[m.key]+'</span>':'')+'</div>';}).join('');
   var legend=CS_META.map(function(m){return '<span class="cs-leg" style="background:'+m.color+'1a;color:'+m.color+'"><span class="cs-dot" style="background:'+m.color+'"></span>'+m.lbl+' ('+counts[m.key]+')</span>';}).join('');
