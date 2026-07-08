@@ -433,13 +433,13 @@ var CS_META=[
   {key:'onTrack',lbl:'على المسار',color:'#05764A',sub:'معامل ≥ 80%'},
   {key:'newStart',lbl:'حديث البدء',color:'#94C245',sub:'ضمن 60 يوماً'},
   {key:'endedIncomplete',lbl:'منتهٍ غير مكتمل',color:'#304258',sub:'انتهت المدة'},
-  {key:'notStarted',lbl:'لم تبدأ',color:'#8896a2',sub:'إنجاز 0%'}
+  {key:'notStarted',lbl:'لم تبدأ',color:'#8896a2',sub:'ملاحظة: لم يتم البدء'}
 ];
 function parseD(s){if(!s)return null;var p=String(s).slice(0,10).split('-');if(p.length!==3||p[0].length!==4)return null;var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));return isNaN(d.getTime())?null:d;}
 function contractStatus(c,today){
+  if(c.note)return 'notStarted'; // يحمل ملاحظة «لم يتم البدء»
   var comp=c.total>0?c.exec/c.total*100:0;
   var s=parseD(c.start),e=parseD(c.end);
-  if(comp<=0)return 'notStarted';
   if(e&&today>=e&&comp<98)return 'endedIncomplete';
   if(s&&(today-s)/86400000<=60)return 'newStart';
   if(s&&e&&e>s){var el=(today-s)/(e-s)*100;if(el<=0)return 'newStart';var f=comp/el;if(f>=0.8)return 'onTrack';if(f>=0.5)return 'late';return 'veryLate';}
@@ -449,8 +449,9 @@ var AR_MONTHS=['يناير','فبراير','مارس','أبريل','مايو','�
 function renderContractStatus(view){
   var now=new Date();var today=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()));
   var g={};
-  view.forEach(function(r){var c=r.contract||'—';if(!g[c])g[c]={total:0,exec:0,start:r.start,end:r.end};
+  view.forEach(function(r){var c=r.contract||'—';if(!g[c])g[c]={total:0,exec:0,start:r.start,end:r.end,note:false};
     g[c].total+=r.total;g[c].exec+=r.exec;
+    if(isNS(r))g[c].note=true;
     if(r.start&&(!g[c].start||r.start<g[c].start))g[c].start=r.start;
     if(r.end&&(!g[c].end||r.end>g[c].end))g[c].end=r.end;});
   var counts={},totalC=0;CS_META.forEach(function(m){counts[m.key]=0;});
