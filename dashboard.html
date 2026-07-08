@@ -119,6 +119,20 @@ body{font-family:'Tajawal',sans-serif;background:var(--off);color:var(--text);di
 .cs-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .cs-leg{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;display:flex;align-items:center;gap:5px}
 @media(max-width:900px){.cs-tiles{grid-template-columns:repeat(3,1fr);gap:10px}.cs-tile{border-left:none}}
+/* pacing (على المسار؟) */
+.pace-wrap{display:grid;grid-template-columns:210px 1fr;gap:22px;align-items:center}
+.pace-badge{text-align:center;padding:16px 12px;border-radius:12px;border:1px solid var(--border)}
+.pace-factor{font-size:36px;font-weight:900;line-height:1}
+.pace-verdict{font-size:15px;font-weight:800;margin-top:4px}
+.pace-badge small{display:block;font-size:10px;color:var(--muted);margin-top:5px}
+.pace-track{position:relative;height:34px;background:var(--off);border:1px solid var(--border);border-radius:8px;margin:30px 0 10px}
+.pace-fill{position:absolute;right:0;top:0;height:100%;border-radius:7px 0 0 7px;min-width:2px;transition:width .5s}
+.pace-marker{position:absolute;top:-8px;height:50px;width:2px;background:#1A2B22}
+.pace-marker::after{content:attr(data-lbl);position:absolute;top:-19px;right:50%;transform:translateX(50%);white-space:nowrap;font-size:10px;font-weight:800;color:#1A2B22;background:#fff;padding:1px 7px;border-radius:6px;border:1px solid var(--border)}
+.pace-stats{display:flex;flex-wrap:wrap;gap:18px}
+.pace-stat{font-size:12px;color:var(--muted);font-weight:600}
+.pace-stat b{font-size:17px}
+@media(max-width:900px){.pace-wrap{grid-template-columns:1fr}}
 /* card */
 .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
 .card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
@@ -236,6 +250,10 @@ tbody tr:hover{background:var(--green-20)}
 
   <div id="panel-overview" class="panel active">
     <div class="kpi-grid" id="kpi-row"></div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-icon icon-green">🎯</div><div><div class="card-title">هل المركز على المسار؟ — الأداء مقابل الخطة الزمنية</div><div class="card-sub">مقارنة نسبة الإنجاز الفعلية بالنسبة المتوقَّعة بناءً على الوقت المنقضي من مدد العقود &nbsp;·&nbsp; ≥95% على المسار &nbsp;·&nbsp; 80–94% متأخر قليلاً &nbsp;·&nbsp; &lt;80% متعثّر</div></div></div>
+      <div id="pace-body"></div>
+    </div>
     <div class="card">
       <div class="card-hdr"><div class="card-icon icon-navy">📅</div><div><div class="card-title" id="cs-title">حالة العقود — معامل الأداء الزمني</div><div class="card-sub">معامل الأداء = الإنجاز المالي الفعلي ÷ نسبة الوقت المنقضي &nbsp;·&nbsp; ≥80% على المسار &nbsp;·&nbsp; 50–79% متأخر &nbsp;·&nbsp; &lt;50% متأخر جداً &nbsp;·&nbsp; فترة سماح 60 يوماً للعقود الحديثة</div></div></div>
       <div id="cs-body"></div>
@@ -383,6 +401,7 @@ function applyFilters(){
   el('match-count').textContent='عدد البنود المطابقة: '+fmtN(t.n)+' بند · '+t.contractCount+' عقد';
   renderKPIs(t);
   renderHeader(t);
+  renderPacing(view);
   renderContractStatus(view);
   renderStatusChart(view);
   renderDomainChart(view);
@@ -425,6 +444,45 @@ function renderHR(view){
     h+='<tr><td>'+esc(clip(r.item,42))+'</td><td>'+esc(r.sub)+'</td><td>'+esc(clip(r.company,22))+'</td><td>'+fmtDate(r.start)+'</td><td>'+fmtDate(r.end)+'</td><td>'+(r.total/1e6).toFixed(2)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
   if(!rows.length)h+='<tr><td colspan="8" class="empty">لا توجد بنود موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
   el('hrTable').innerHTML=h+'</tbody>';
+}
+/* ---- الأداء مقابل الخطة الزمنية (هل المركز على المسار؟) ---- */
+function renderPacing(view){
+  var now=new Date();var today=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()));
+  var startedTotal=0,exec=0,expSum=0;
+  view.forEach(function(r){
+    if(isNS(r))return; // البنود «لم تبدأ» مستثناة من نسبة الإنجاز
+    startedTotal+=r.total;exec+=r.exec;
+    var s=parseD(r.start),e=parseD(r.end),frac=0;
+    if(s&&e&&e>s){frac=(today-s)/(e-s);frac=Math.max(0,Math.min(1,frac));}
+    expSum+=r.total*frac;
+  });
+  var actual=startedTotal>0?exec/startedTotal*100:0;
+  var expected=startedTotal>0?expSum/startedTotal*100:0;
+  var factor=expected>0?actual/expected:0;
+  var gap=actual-expected;
+  var verdict,color;
+  if(factor>=0.95){verdict='على المسار';color='#05764A';}
+  else if(factor>=0.80){verdict='متأخر قليلاً';color='#D05418';}
+  else {verdict='متعثّر';color='#C0170A';}
+  el('pace-body').innerHTML=
+    '<div class="pace-wrap">'+
+      '<div class="pace-badge" style="background:'+color+'14;border-color:'+color+'55">'+
+        '<div class="pace-factor" style="color:'+color+'">'+Math.round(factor*100)+'%</div>'+
+        '<div class="pace-verdict" style="color:'+color+'">'+verdict+'</div>'+
+        '<small>معامل الأداء = الفعلي ÷ المتوقَّع</small>'+
+      '</div>'+
+      '<div>'+
+        '<div class="pace-track">'+
+          '<div class="pace-fill" style="width:'+actual.toFixed(1)+'%;background:'+color+'"></div>'+
+          '<div class="pace-marker" data-lbl="المتوقَّع '+expected.toFixed(1)+'%" style="right:'+expected.toFixed(1)+'%"></div>'+
+        '</div>'+
+        '<div class="pace-stats">'+
+          '<div class="pace-stat">الإنجاز الفعلي: <b style="color:'+color+'">'+actual.toFixed(1)+'%</b></div>'+
+          '<div class="pace-stat">المتوقَّع (حسب الزمن): <b style="color:#1A2B22">'+expected.toFixed(1)+'%</b></div>'+
+          '<div class="pace-stat">الفجوة: <b style="color:'+(gap>=0?'#05764A':'#C0170A')+'">'+(gap>=0?'+':'')+gap.toFixed(1)+' نقطة</b></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
 }
 /* ---- حالة العقود (معامل الأداء الزمني) ---- */
 var CS_META=[
