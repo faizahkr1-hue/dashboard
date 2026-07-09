@@ -274,6 +274,7 @@ tbody tr:hover{background:var(--green-20)}
 
   <div id="panel-hr" class="panel">
     <div class="kpi-grid" id="hr-kpi" style="grid-template-columns:repeat(4,1fr)"></div>
+    <div class="card"><div class="card-hdr"><div class="card-icon icon-navy">🧑‍🔬</div><div><div class="card-title">إحصائيات المجالات الفرعية — العدد لكل مجال</div><div class="card-sub">عدد الكوادر (الكمية) وعدد البنود والقيمة ونسبة الإنجاز لكل مجال فرعي</div></div></div><div class="tbl-wrap"><table id="hrSubTable"></table></div></div>
     <div class="g2">
       <div class="card"><div class="card-hdr"><div class="card-icon icon-navy">👥</div><div><div class="card-title">توزيع الموارد البشرية حسب المجال الفرعي</div><div class="card-sub">القيمة الإجمالية والمنفَّذ لكل فئة (م.ر)</div></div></div><div class="chart-box"><canvas id="hrChart"></canvas></div></div>
       <div class="card"><div class="card-hdr"><div class="card-icon icon-green">🏢</div><div><div class="card-title">عقود الموارد البشرية</div><div class="card-sub">حسب رقم العقد — مع تاريخ البداية والنهاية</div></div></div><div class="tbl-wrap" style="max-height:300px;overflow:auto"><table id="hrContractsTable"></table></div></div>
@@ -414,6 +415,19 @@ function renderHR(view){
     kpi('','💰',fmtM(t.total),'م.ر','إجمالي القيمة','badge-navy','')+
     kpi('lime','✅',fmtM(t.exec),'م.ر','المنفَّذ','badge-lime',t.pct.toFixed(1)+'%')+
     kpi('orange','⏳',fmtM(t.total-t.exec),'م.ر','المتبقي','badge-orange','');
+  // إحصائيات المجالات الفرعية (العدد لكل مجال)
+  var sg={};
+  rows.forEach(function(r){var s=r.sub||'—';if(!sg[s])sg[s]={n:0,qty:0,qe:0,qr:0,tot:0,ex:0};
+    sg[s].n++;sg[s].qty+=r.qty||0;sg[s].qe+=r.qtyExec||0;sg[s].qr+=r.qtyRem||0;sg[s].tot+=r.total;sg[s].ex+=r.exec;});
+  var sk=Object.keys(sg).sort(function(a,b){return sg[b].qty-sg[a].qty;});
+  var sh='<thead><tr><th>المجال الفرعي</th><th>العدد (كوادر)</th><th>عدد البنود</th><th>القيمة (ريال)</th><th>المنفَّذ (ريال)</th><th>نسبة الإنجاز</th></tr></thead><tbody>';
+  var tQty=0,tN=0,tTot=0,tEx=0;
+  sk.forEach(function(s){var x=sg[s];var p=x.tot>0?x.ex/x.tot*100:0;var col=subClr(p);tQty+=x.qty;tN+=x.n;tTot+=x.tot;tEx+=x.ex;
+    sh+='<tr><td class="tc">'+esc(s)+'</td><td><b>'+fmtQ(x.qty)+'</b></td><td>'+x.n+'</td><td>'+fmtR(x.tot)+'</td><td>'+fmtR(x.ex)+'</td><td>'+bar(p,col)+'</td></tr>';});
+  if(sk.length){var tp=tTot>0?tEx/tTot*100:0;
+    sh+='<tr style="background:var(--off);font-weight:800"><td>الإجمالي</td><td><b>'+fmtQ(tQty)+'</b></td><td>'+tN+'</td><td>'+fmtR(tTot)+'</td><td>'+fmtR(tEx)+'</td><td>'+bar(tp,subClr(tp))+'</td></tr>';}
+  else sh+='<tr><td colspan="6" class="empty">لا توجد بيانات موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
+  el('hrSubTable').innerHTML=sh+'</tbody>';
   var g=groupSum(rows,'sub');
   var keys=Object.keys(g).sort(function(a,b){return g[b].total-g[a].total;});
   destroy('hr');
