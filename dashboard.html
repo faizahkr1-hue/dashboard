@@ -438,11 +438,11 @@ function renderHR(view){
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:TXT,font:{family:'Tajawal',size:11},boxWidth:12}},tooltip:{rtl:true,bodyFont:{family:'Tajawal'},callbacks:{label:function(d){return d.dataset.label+': '+d.raw+' م.ر';}}}},
       scales:{x:{grid:{color:GRID},ticks:{color:TXT,callback:function(v){return v+' م';}}},y:{grid:{display:false},ticks:{color:'#1A2B22',font:{family:'Tajawal',size:11}}}}}});
   }
-  var gc={};rows.forEach(function(r){var c=r.contract||'—';if(!gc[c])gc[c]={total:0,exec:0,n:0,company:r.company,start:r.start,end:r.end};gc[c].total+=r.total;gc[c].exec+=r.exec;gc[c].n++;});
+  var gc={};rows.forEach(function(r){var c=r.contract||'—';if(!gc[c])gc[c]={total:0,exec:0,n:0,project:r.project,company:r.company,start:r.start,end:r.end};gc[c].total+=r.total;gc[c].exec+=r.exec;gc[c].n++;});
   var ck=Object.keys(gc).sort(function(a,b){return gc[b].total-gc[a].total;});
-  var hc='<thead><tr><th>رقم العقد</th><th>الشركة</th><th>البنود</th><th>البداية</th><th>النهاية</th><th>الإجمالي (ريال)</th><th>الإنجاز</th></tr></thead><tbody>';
+  var hc='<thead><tr><th>اسم المشروع</th><th>الشركة</th><th>البنود</th><th>البداية</th><th>النهاية</th><th>الإجمالي (ريال)</th><th>الإنجاز</th></tr></thead><tbody>';
   ck.forEach(function(c){var d=gc[c];var p=d.total>0?d.exec/d.total*100:0;var col=subClr(p);
-    hc+='<tr><td>'+esc(c)+'</td><td class="tc">'+esc(d.company)+'</td><td>'+d.n+'</td><td>'+fmtDate(d.start)+'</td><td>'+fmtDate(d.end)+'</td><td>'+fmtR(d.total)+'</td><td>'+bar(p,col)+'</td></tr>';});
+    hc+='<tr><td class="tc">'+esc(d.project)+'</td><td class="tc">'+esc(d.company)+'</td><td>'+d.n+'</td><td>'+fmtDate(d.start)+'</td><td>'+fmtDate(d.end)+'</td><td>'+fmtR(d.total)+'</td><td>'+bar(p,col)+'</td></tr>';});
   if(!ck.length)hc+='<tr><td colspan="7" class="empty">لا توجد بنود موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
   el('hrContractsTable').innerHTML=hc+'</tbody>';
   var h='<thead><tr><th>البند</th><th>المجال الفرعي</th><th>الشركة</th><th>البداية</th><th>النهاية</th><th>الإجمالي (ريال)</th><th>الكمية المنفذة</th><th>الكمية المتبقية</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>';
