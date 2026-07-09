@@ -172,16 +172,24 @@ tbody tr:hover{background:var(--green-20)}
 .sub-foot{display:flex;align-items:center;justify-content:space-between;margin-top:7px;font-size:10px;color:var(--muted)}
 /* topic cards */
 .topic-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
-.topic-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.topic-card::after{content:'';position:absolute;bottom:0;right:0;left:0;height:5px;background:var(--green)}
-.topic-card.c1::after{background:var(--green)}.topic-card.c2::after{background:var(--orange)}.topic-card.c3::after{background:var(--navy)}
-.topic-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.topic-emoji{font-size:26px}
-.topic-name{font-size:16px;font-weight:900}
-.topic-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tstat{background:var(--off);border-radius:9px;padding:9px 11px}
-.tstat-v{font-size:17px;font-weight:900}
-.tstat-l{font-size:10px;color:var(--muted);font-weight:600}
+.topic-card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.tc-accent{height:5px;flex-shrink:0}
+.tc-head{padding:15px 18px 13px}
+.tc-title{display:flex;align-items:center;gap:10px}
+.tc-emoji{font-size:24px;line-height:1}
+.tc-name{font-size:17px;font-weight:900}
+.tc-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tc-chip{font-size:10px;font-weight:700;padding:3px 10px;border-radius:11px;background:var(--off);color:var(--muted)}
+.tc-chip.ns{background:var(--gray-20);color:#4a5560}
+.tc-block{padding:12px 18px 14px;border-top:1px solid var(--off)}
+.tc-block-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.tc-block-lbl{font-size:11px;font-weight:800;color:var(--muted)}
+.tc-pct{font-size:16px;font-weight:900}
+.tc-bar{height:8px;background:var(--off);border-radius:5px;overflow:hidden}
+.tc-fill{height:100%;border-radius:5px;min-width:3px;transition:width .5s}
+.tc-nums{display:flex;flex-wrap:wrap;gap:14px;margin-top:11px}
+.tc-num{font-size:10px;color:var(--muted);font-weight:600}
+.tc-num b{display:block;font-size:14px;color:var(--text);font-weight:800;margin-top:2px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:13px 26px;border-radius:12px;font-size:13px;font-weight:700;color:#fff;z-index:9999;transition:opacity .4s;box-shadow:0 4px 20px rgba(0,0,0,.25);white-space:nowrap;opacity:0;pointer-events:none}
 .empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
 @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.filters-grid{grid-template-columns:repeat(2,1fr)}.g2,.g3,.topic-hero{grid-template-columns:1fr}}
@@ -579,16 +587,25 @@ function topicRows(view,t){return view.filter(function(r){return topicsOf(r).ind
 function renderTopics(view){
   var defs=[['المشخصات','🔬','c1','#D05418'],['اللقاحات','🧬','c2','#05764A'],['التحصين','💉','c3','#304258']];
   var hero='';var tblHtml='';var chartData=[];
-  defs.forEach(function(d){var rows=topicRows(view,d[0]);var tt=totals(rows);
-    hero+='<div class="topic-card '+d[2]+'"><div class="topic-top"><span class="topic-emoji">'+d[1]+'</span><span class="topic-name">'+d[0]+'</span></div>'+
-      '<div class="topic-stats">'+
-        tstat(fmtM(tt.total)+' م',' إجمالي القيمة')+
-        tstat(tt.pct.toFixed(0)+'%','نسبة الإنجاز')+
-        tstat(fmtN(tt.n),'عدد البنود')+
-        tstat(tt.contractCount,'عدد العقود')+
-        tstat(fmtM(tt.exec)+' م','المنفَّذ')+
-        tstat(fmtN(tt.ns),'لم تبدأ')+
-      '</div></div>';
+  defs.forEach(function(d){var rows=topicRows(view,d[0]);var tt=totals(rows);var c=d[3];
+    var q=0,qe=0,qr=0;rows.forEach(function(r){q+=r.qty||0;qe+=r.qtyExec||0;qr+=r.qtyRem||0;});
+    var valPct=tt.total>0?tt.exec/tt.total*100:0;
+    var qtyPct=q>0?qe/q*100:0;
+    hero+='<div class="topic-card">'+
+      '<div class="tc-accent" style="background:'+c+'"></div>'+
+      '<div class="tc-head"><div class="tc-title"><span class="tc-emoji">'+d[1]+'</span><span class="tc-name">'+d[0]+'</span></div>'+
+        '<div class="tc-meta"><span class="tc-chip">'+fmtN(tt.n)+' بند</span><span class="tc-chip">'+tt.contractCount+' عقد</span>'+(tt.ns?'<span class="tc-chip ns">'+tt.ns+' لم تبدأ</span>':'')+'</div></div>'+
+      '<div class="tc-block">'+
+        '<div class="tc-block-head"><span class="tc-block-lbl">القيمة (ريال)</span><span class="tc-pct" style="color:'+c+'">'+valPct.toFixed(0)+'%</span></div>'+
+        '<div class="tc-bar"><div class="tc-fill" style="width:'+valPct.toFixed(1)+'%;background:'+c+'"></div></div>'+
+        '<div class="tc-nums"><span class="tc-num">الإجمالية<b>'+fmtR(tt.total)+'</b></span><span class="tc-num">المنفَّذة<b>'+fmtR(tt.exec)+'</b></span><span class="tc-num">المتبقية<b>'+fmtR(tt.total-tt.exec)+'</b></span></div>'+
+      '</div>'+
+      '<div class="tc-block">'+
+        '<div class="tc-block-head"><span class="tc-block-lbl">الكمية</span><span class="tc-pct" style="color:'+c+'">'+qtyPct.toFixed(0)+'%</span></div>'+
+        '<div class="tc-bar"><div class="tc-fill" style="width:'+qtyPct.toFixed(1)+'%;background:'+c+'"></div></div>'+
+        '<div class="tc-nums"><span class="tc-num">الإجمالية<b>'+fmtQ(q)+'</b></span><span class="tc-num">المنفَّذة<b>'+fmtQ(qe)+'</b></span><span class="tc-num">المتبقية<b>'+fmtQ(qr)+'</b></span></div>'+
+      '</div>'+
+    '</div>';
     chartData.push({name:d[0],exec:tt.exec/1e6,rem:(tt.total-tt.exec)/1e6});
     // table
     var rowsSorted=rows.slice().sort(function(a,b){return b.total-a.total;});
@@ -606,7 +623,6 @@ function renderTopics(view){
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:TXT,font:{family:'Tajawal',size:11},boxWidth:12}},tooltip:{rtl:true,bodyFont:{family:'Tajawal'},callbacks:{label:function(d){return d.dataset.label+': '+d.raw+' م.ر';}}}},
     scales:{x:{grid:{display:false},ticks:{color:'#1A2B22',font:{family:'Tajawal',size:13}}},y:{grid:{color:GRID},ticks:{color:TXT,callback:function(v){return v+' م';}}}}}});
 }
-function tstat(v,l){return '<div class="tstat"><div class="tstat-v">'+v+'</div><div class="tstat-l">'+l+'</div></div>';}
 
 /* ---- sectors + contracts ---- */
 function renderSectors(view){
