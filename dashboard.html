@@ -498,8 +498,8 @@ function renderKPIs(t){
   var completed=RAW.filter(function(r){return !r.active;}).length;
   var html=''+
    kpi('','💰',fmtM(t.total),'م.ر','إجمالي قيمة العقود','badge-navy',t.contractCount+' عقد نشط')+
-   kpi('lime','✅',fmtM(t.exec),'م.ر','المنفَّذ حتى الآن','badge-lime',t.pct.toFixed(1)+'% من المُباشَر')+
-   kpi('orange','⏳',fmtM(t.rem),'م.ر','المتبقي للتنفيذ','badge-orange',(100-t.pct).toFixed(1)+'% متبقٍّ')+
+   kpi('lime','✅',fmtM(t.exec),'م.ر','قيمة المنفَّذ حتى الآن','badge-lime',t.pct.toFixed(1)+'%')+
+   kpi('orange','⏳',fmtM(t.rem),'م.ر','قيمة المتبقي للتنفيذ','badge-orange',(100-t.pct).toFixed(1)+'%')+
    kpi('navy','📋',fmtN(t.n),'','إجمالي البنود','badge-navy',uniqCount(currentView(),'main')+' مجالات')+
    kpi('gray','⛔',fmtN(t.ns),'','بنود لم تبدأ','badge-gray',fmtM(t.nsVal)+' م.ر');
   el('kpi-row').innerHTML=html;
