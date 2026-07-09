@@ -119,6 +119,18 @@ body{font-family:'Tajawal',sans-serif;background:var(--off);color:var(--text);di
 .cs-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .cs-leg{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;display:flex;align-items:center;gap:5px}
 @media(max-width:900px){.cs-tiles{grid-template-columns:repeat(3,1fr);gap:10px}.cs-tile{border-left:none}}
+/* urgent projects */
+.urg-list{display:flex;flex-direction:column;gap:10px}
+.urg-item{display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:center;padding:12px 15px;background:var(--off);border:1px solid var(--border);border-right:4px solid var(--red);border-radius:11px}
+.urg-rank{width:30px;height:30px;border-radius:8px;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.urg-mid{min-width:0}
+.urg-name{font-size:14px;font-weight:800;color:var(--text)}
+.urg-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.urg-metrics{display:flex;gap:18px;flex-shrink:0}
+.urg-metric{text-align:center}
+.urg-metric b{display:block;font-size:15px;font-weight:900;line-height:1.2}
+.urg-metric span{font-size:10px;color:var(--muted);font-weight:600}
+@media(max-width:760px){.urg-item{grid-template-columns:30px 1fr}.urg-metrics{grid-column:1/-1;justify-content:space-between;gap:8px;flex-wrap:wrap}}
 /* card */
 .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
 .card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
@@ -245,6 +257,10 @@ tbody tr:hover{background:var(--green-20)}
 
   <div id="panel-overview" class="panel active">
     <div class="kpi-grid" id="kpi-row"></div>
+    <div class="card" style="border-color:#F0C6B4">
+      <div class="card-hdr"><div class="card-icon" style="background:#FBE3D8">🚨</div><div><div class="card-title">مشاريع تحتاج تدخلاً طارئاً</div><div class="card-sub">أعلى 5 عقود خطورةً = المبلغ المتبقي × مقدار التأخر عن الجدول الزمني × ضيق الوقت المتبقي</div></div></div>
+      <div id="urg-list" class="urg-list"></div>
+    </div>
     <div class="card">
       <div class="card-hdr"><div class="card-icon icon-navy">📅</div><div><div class="card-title" id="cs-title">حالة العقود — معامل الأداء الزمني</div><div class="card-sub">معامل الأداء = الإنجاز المالي الفعلي ÷ نسبة الوقت المنقضي &nbsp;·&nbsp; ≥80% على المسار &nbsp;·&nbsp; 50–79% متأخر &nbsp;·&nbsp; &lt;50% متأخر جداً &nbsp;·&nbsp; فترة سماح 60 يوماً للعقود الحديثة</div></div></div>
       <div id="cs-body"></div>
@@ -395,6 +411,7 @@ function applyFilters(){
   el('match-count').textContent='عدد البنود المطابقة: '+fmtN(t.n)+' بند · '+t.contractCount+' عقد';
   renderKPIs(t);
   renderHeader(t,view);
+  renderUrgent(view);
   renderContractStatus(view);
   renderStatusChart(view);
   renderDomainChart(view);
@@ -470,6 +487,42 @@ function computePacing(view){
   else if(factor>=0.80){verdict='متأخر قليلاً';color='#D05418';}
   else {verdict='متعثّر';color='#C0170A';}
   return {actual:actual,expected:expected,verdict:verdict,color:color};
+}
+/* ---- مشاريع تحتاج تدخلاً طارئاً ---- */
+function renderUrgent(view){
+  var now=new Date();var today=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()));
+  var g={};
+  view.forEach(function(r){var c=r.contract||'—';if(!g[c])g[c]={total:0,exec:0,n:0,start:r.start,end:r.end,project:r.project,company:r.company,sector:r.sector};
+    g[c].total+=r.total;g[c].exec+=r.exec;g[c].n++;
+    if(r.start&&(!g[c].start||r.start<g[c].start))g[c].start=r.start;
+    if(r.end&&(!g[c].end||r.end>g[c].end))g[c].end=r.end;
+    if(!g[c].project)g[c].project=r.project;if(!g[c].company)g[c].company=r.company;if(!g[c].sector)g[c].sector=r.sector;});
+  var arr=[];
+  Object.keys(g).forEach(function(c){var x=g[c];var s=parseD(x.start),e=parseD(x.end);if(!(s&&e&&e>s))return;
+    var comp=x.total>0?x.exec/x.total*100:0;
+    var elapsed=Math.max(0,Math.min(100,(today-s)/(e-s)*100));
+    var gap=Math.max(0,elapsed-comp);
+    var rem=x.total-x.exec;var ended=today>=e;var daysLeft=Math.round((e-today)/86400000);
+    var tp=ended?1.6:1+elapsed/100;
+    var score=(rem/1e6)*(gap/100)*tp;
+    if(score<=0)return;
+    arr.push({project:x.project,company:x.company,sector:x.sector,comp:comp,gap:gap,rem:rem,ended:ended,daysLeft:daysLeft,n:x.n,score:score});});
+  arr.sort(function(a,b){return b.score-a.score;});
+  var top=arr.slice(0,5);
+  if(!top.length){el('urg-list').innerHTML='<div class="empty">لا توجد مشاريع متأخرة ضمن الفلاتر الحالية. 👍</div>';return;}
+  el('urg-list').innerHTML=top.map(function(it,i){
+    var sev=it.ended||it.gap>=40?'#C0170A':(it.gap>=25?'#D05418':'#B5811A');
+    function m(v,l,col){return '<div class="urg-metric"><b style="color:'+(col||'#1A2B22')+'">'+v+'</b><span>'+l+'</span></div>';}
+    return '<div class="urg-item" style="border-right-color:'+sev+'">'+
+      '<div class="urg-rank" style="background:'+sev+'">'+(i+1)+'</div>'+
+      '<div class="urg-mid"><div class="urg-name">'+esc(it.project)+'</div><div class="urg-sub">'+esc(it.company)+' · '+esc(it.sector)+' · '+it.n+' بند</div></div>'+
+      '<div class="urg-metrics">'+
+        m(it.comp.toFixed(0)+'%','الإنجاز')+
+        m('−'+it.gap.toFixed(0)+' نقطة','التأخر',sev)+
+        m(fmtM(it.rem)+' م','المتبقي')+
+        m(it.ended?'انتهت':it.daysLeft.toLocaleString('en-US')+' يوم','الوقت',it.ended?'#C0170A':null)+
+      '</div>'+
+    '</div>';}).join('');
 }
 /* ---- حالة العقود (معامل الأداء الزمني) ---- */
 var CS_META=[
