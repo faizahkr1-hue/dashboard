@@ -308,6 +308,7 @@ var STATUS_META = {
 var STATUS_ORDER = ['notStarted','crit','late','mid','good','done'];
 function fmtM(v){return (v/1e6).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});}
 function fmtN(v){return (v||0).toLocaleString('en-US');}
+function fmtR(v){return Math.round(v||0).toLocaleString('en-US');} // القيمة الكاملة بالريال
 function pctVal(r){return r.total>0?r.exec/r.total*100:0;}
 function isNS(r){return NS_RE.test(r.note||'');}
 function statusOf(r){
@@ -416,14 +417,14 @@ function renderHR(view){
   }
   var gc={};rows.forEach(function(r){var c=r.contract||'—';if(!gc[c])gc[c]={total:0,exec:0,n:0,company:r.company,start:r.start,end:r.end};gc[c].total+=r.total;gc[c].exec+=r.exec;gc[c].n++;});
   var ck=Object.keys(gc).sort(function(a,b){return gc[b].total-gc[a].total;});
-  var hc='<thead><tr><th>رقم العقد</th><th>الشركة</th><th>البنود</th><th>البداية</th><th>النهاية</th><th>الإجمالي (م.ر)</th><th>الإنجاز</th></tr></thead><tbody>';
+  var hc='<thead><tr><th>رقم العقد</th><th>الشركة</th><th>البنود</th><th>البداية</th><th>النهاية</th><th>الإجمالي (ريال)</th><th>الإنجاز</th></tr></thead><tbody>';
   ck.forEach(function(c){var d=gc[c];var p=d.total>0?d.exec/d.total*100:0;var col=subClr(p);
-    hc+='<tr><td>'+esc(c)+'</td><td class="tc">'+esc(d.company)+'</td><td>'+d.n+'</td><td>'+fmtDate(d.start)+'</td><td>'+fmtDate(d.end)+'</td><td>'+(d.total/1e6).toFixed(2)+'</td><td>'+bar(p,col)+'</td></tr>';});
+    hc+='<tr><td>'+esc(c)+'</td><td class="tc">'+esc(d.company)+'</td><td>'+d.n+'</td><td>'+fmtDate(d.start)+'</td><td>'+fmtDate(d.end)+'</td><td>'+fmtR(d.total)+'</td><td>'+bar(p,col)+'</td></tr>';});
   if(!ck.length)hc+='<tr><td colspan="7" class="empty">لا توجد بنود موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
   el('hrContractsTable').innerHTML=hc+'</tbody>';
-  var h='<thead><tr><th>البند</th><th>المجال الفرعي</th><th>الشركة</th><th>البداية</th><th>النهاية</th><th>الإجمالي (م.ر)</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>';
+  var h='<thead><tr><th>البند</th><th>المجال الفرعي</th><th>الشركة</th><th>البداية</th><th>النهاية</th><th>الإجمالي (ريال)</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>';
   rows.slice().sort(function(a,b){return b.total-a.total;}).forEach(function(r){var s=STATUS_META[statusOf(r)];
-    h+='<tr><td class="tc">'+esc(r.item)+'</td><td>'+esc(r.sub)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+fmtDate(r.start)+'</td><td>'+fmtDate(r.end)+'</td><td>'+(r.total/1e6).toFixed(2)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
+    h+='<tr><td class="tc">'+esc(r.item)+'</td><td>'+esc(r.sub)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+fmtDate(r.start)+'</td><td>'+fmtDate(r.end)+'</td><td>'+fmtR(r.total)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
   if(!rows.length)h+='<tr><td colspan="8" class="empty">لا توجد بنود موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
   el('hrTable').innerHTML=h+'</tbody>';
 }
@@ -539,9 +540,9 @@ function renderDomainChart(view){
 }
 function renderTopItems(view){
   var rows=view.slice().sort(function(a,b){return b.total-a.total;}).slice(0,10);
-  var h='<thead><tr><th>البند</th><th>المشروع</th><th>المجال</th><th>الإجمالي (م.ر)</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>';
+  var h='<thead><tr><th>البند</th><th>المشروع</th><th>المجال</th><th>الإجمالي (ريال)</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>';
   rows.forEach(function(r){var s=STATUS_META[statusOf(r)];var p=pctVal(r);
-    h+='<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td>'+esc(r.main)+'</td><td>'+(r.total/1e6).toFixed(2)+'</td>'+
+    h+='<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td>'+esc(r.main)+'</td><td>'+fmtR(r.total)+'</td>'+
       '<td>'+bar(p,s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
   el('topItemsTable').innerHTML=h+'</tbody>';
 }
@@ -591,9 +592,9 @@ function renderTopics(view){
     // table
     var rowsSorted=rows.slice().sort(function(a,b){return b.total-a.total;});
     var body=rowsSorted.map(function(r){var s=STATUS_META[statusOf(r)];
-      return '<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+(r.total/1e6).toFixed(2)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';}).join('');
+      return '<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+fmtR(r.total)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';}).join('');
     tblHtml+='<div class="card"><div class="card-hdr"><div class="card-icon icon-green">'+d[1]+'</div><div><div class="card-title">'+d[0]+'</div><div class="card-sub">'+rows.length+' بند · '+tt.contractCount+' عقد · '+fmtM(tt.total)+' م.ر</div></div></div>'+
-      '<div class="tbl-wrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>البند</th><th>المشروع</th><th>الشركة</th><th>الإجمالي (م.ر)</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>'+(body||'<tr><td colspan="6" class="empty">لا بنود مطابِقة</td></tr>')+'</tbody></table></div></div>';
+      '<div class="tbl-wrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>البند</th><th>المشروع</th><th>الشركة</th><th>الإجمالي (ريال)</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>'+(body||'<tr><td colspan="6" class="empty">لا بنود مطابِقة</td></tr>')+'</tbody></table></div></div>';
   });
   el('topic-hero').innerHTML=hero;
   el('topic-tables').innerHTML=tblHtml;
@@ -622,9 +623,9 @@ function renderContracts(view){
   view.forEach(function(r){var c=r.contract||'—';if(!g[c])g[c]={total:0,exec:0,n:0,project:r.project,company:r.company,sector:r.sector,ns:0,start:r.start,end:r.end};
     g[c].total+=r.total;g[c].exec+=r.exec;g[c].n++;if(isNS(r))g[c].ns++;});
   var keys=Object.keys(g).sort(function(a,b){return g[b].total-g[a].total;});
-  var h='<thead><tr><th>رقم العقد</th><th>المشروع</th><th>الشركة</th><th>البداية</th><th>النهاية</th><th>البنود</th><th>الإجمالي (م.ر)</th><th>الإنجاز</th></tr></thead><tbody>';
+  var h='<thead><tr><th>رقم العقد</th><th>المشروع</th><th>الشركة</th><th>البداية</th><th>النهاية</th><th>البنود</th><th>الإجمالي (ريال)</th><th>الإنجاز</th></tr></thead><tbody>';
   keys.forEach(function(c){var d=g[c];var p=d.total>0?d.exec/d.total*100:0;var col=subClr(p);
-    h+='<tr><td>'+esc(c)+'</td><td class="tc">'+esc(d.project)+'</td><td class="tc">'+esc(d.company)+'</td><td>'+fmtDate(d.start)+'</td><td>'+fmtDate(d.end)+'</td><td>'+d.n+(d.ns?' <span class="pill st-notStarted">'+d.ns+' لم تبدأ</span>':'')+'</td><td>'+(d.total/1e6).toFixed(2)+'</td><td>'+bar(p,col)+'</td></tr>';});
+    h+='<tr><td>'+esc(c)+'</td><td class="tc">'+esc(d.project)+'</td><td class="tc">'+esc(d.company)+'</td><td>'+fmtDate(d.start)+'</td><td>'+fmtDate(d.end)+'</td><td>'+d.n+(d.ns?' <span class="pill st-notStarted">'+d.ns+' لم تبدأ</span>':'')+'</td><td>'+fmtR(d.total)+'</td><td>'+bar(p,col)+'</td></tr>';});
   el('contractsTable').innerHTML=h+'</tbody>';
 }
 
@@ -637,9 +638,9 @@ function renderNotStarted(view){
     kpi('gray','⛔',fmtN(rows.length),'','بنود لم تبدأ','badge-gray','ملاحظة: لم يتم البدء')+
     kpi('gray','💰',fmtM(val),'م.ر','قيمتها الإجمالية','badge-gray',(view.length?(val/totals(view).total*100).toFixed(1):0)+'% من القيمة')+
     kpi('gray','📑',fmtN(Object.keys(contracts).length),'','عقود متأثرة','badge-gray','');
-  var h='<thead><tr><th>البند</th><th>المشروع</th><th>الشركة</th><th>المجال</th><th>رقم العقد</th><th>القيمة (م.ر)</th></tr></thead><tbody>';
+  var h='<thead><tr><th>البند</th><th>المشروع</th><th>الشركة</th><th>المجال</th><th>رقم العقد</th><th>القيمة (ريال)</th></tr></thead><tbody>';
   rows.sort(function(a,b){return b.total-a.total;}).forEach(function(r){
-    h+='<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+esc(r.main)+'</td><td>'+esc(r.contract)+'</td><td>'+(r.total/1e6).toFixed(2)+'</td></tr>';});
+    h+='<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+esc(r.main)+'</td><td>'+esc(r.contract)+'</td><td>'+fmtR(r.total)+'</td></tr>';});
   if(!rows.length)h+='<tr><td colspan="6" class="empty">لا توجد بنود «لم تبدأ» ضمن الفلاتر الحالية.</td></tr>';
   el('nsTable').innerHTML=h+'</tbody>';
 }
@@ -648,13 +649,13 @@ function renderNotStarted(view){
 var ITEMS_CACHE=[];
 function renderItemsTable(view){
   ITEMS_CACHE=view;
-  var cols=[['item','البند'],['project','المشروع'],['sector','القطاع'],['main','المجال الرئيسي'],['sub','الفرعي'],['contract','رقم العقد'],['start','البداية'],['end','النهاية'],['total','الإجمالي'],['exec','المنفَّذ'],['pct','الإنجاز'],['status','الحالة']];
+  var cols=[['item','البند'],['project','المشروع'],['sector','القطاع'],['main','المجال الرئيسي'],['sub','الفرعي'],['contract','رقم العقد'],['start','البداية'],['end','النهاية'],['total','الإجمالي (ريال)'],['exec','المنفَّذ (ريال)'],['pct','الإنجاز'],['status','الحالة']];
   var h='<thead><tr>'+cols.map(function(c){return '<th onclick="sortItems(\''+c[0]+'\')">'+c[1]+(SORT.key===c[0]?(SORT.dir>0?' ▲':' ▼'):'')+'</th>';}).join('')+'</tr></thead><tbody>';
   var rows=view.slice();
   if(SORT.key){var k=SORT.key;rows.sort(function(a,b){var va=sortKey(a,k),vb=sortKey(b,k);if(va<vb)return -1*SORT.dir;if(va>vb)return SORT.dir;return 0;});}
   rows.slice(0,400).forEach(function(r){var s=STATUS_META[statusOf(r)];var p=pctVal(r);
     h+='<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td>'+esc(r.sector)+'</td><td>'+esc(r.main)+'</td><td>'+esc(r.sub)+'</td><td>'+esc(r.contract)+'</td><td>'+fmtDate(r.start)+'</td><td>'+fmtDate(r.end)+'</td>'+
-      '<td>'+(r.total/1e6).toFixed(2)+'</td><td>'+(r.exec/1e6).toFixed(2)+'</td><td>'+bar(p,s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
+      '<td>'+fmtR(r.total)+'</td><td>'+fmtR(r.exec)+'</td><td>'+bar(p,s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
   h+='</tbody>';
   el('itemsTable').innerHTML=h;
   if(rows.length>400){el('itemsTable').insertAdjacentHTML('afterend','');}
