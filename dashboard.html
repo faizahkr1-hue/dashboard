@@ -423,10 +423,10 @@ function renderHR(view){
     hc+='<tr><td>'+esc(c)+'</td><td class="tc">'+esc(d.company)+'</td><td>'+d.n+'</td><td>'+fmtDate(d.start)+'</td><td>'+fmtDate(d.end)+'</td><td>'+fmtR(d.total)+'</td><td>'+bar(p,col)+'</td></tr>';});
   if(!ck.length)hc+='<tr><td colspan="7" class="empty">لا توجد بنود موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
   el('hrContractsTable').innerHTML=hc+'</tbody>';
-  var h='<thead><tr><th>البند</th><th>المجال الفرعي</th><th>الشركة</th><th>البداية</th><th>النهاية</th><th>الإجمالي (ريال)</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>';
+  var h='<thead><tr><th>البند</th><th>المجال الفرعي</th><th>الشركة</th><th>البداية</th><th>النهاية</th><th>الإجمالي (ريال)</th><th>الكمية المنفذة</th><th>الكمية المتبقية</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>';
   rows.slice().sort(function(a,b){return b.total-a.total;}).forEach(function(r){var s=STATUS_META[statusOf(r)];
-    h+='<tr><td class="tc">'+esc(r.item)+'</td><td>'+esc(r.sub)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+fmtDate(r.start)+'</td><td>'+fmtDate(r.end)+'</td><td>'+fmtR(r.total)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
-  if(!rows.length)h+='<tr><td colspan="8" class="empty">لا توجد بنود موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
+    h+='<tr><td class="tc">'+esc(r.item)+'</td><td>'+esc(r.sub)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+fmtDate(r.start)+'</td><td>'+fmtDate(r.end)+'</td><td>'+fmtR(r.total)+'</td><td>'+fmtQ(r.qtyExec)+'</td><td>'+fmtQ(r.qtyRem)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
+  if(!rows.length)h+='<tr><td colspan="10" class="empty">لا توجد بنود موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
   el('hrTable').innerHTML=h+'</tbody>';
 }
 /* ---- الأداء مقابل الخطة الزمنية (مؤشر مبسّط في الرأس) ---- */
@@ -541,9 +541,9 @@ function renderDomainChart(view){
 }
 function renderTopItems(view){
   var rows=view.slice().sort(function(a,b){return b.total-a.total;}).slice(0,10);
-  var h='<thead><tr><th>البند</th><th>المشروع</th><th>المجال</th><th>الإجمالي (ريال)</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>';
+  var h='<thead><tr><th>البند</th><th>المشروع</th><th>المجال</th><th>الإجمالي (ريال)</th><th>الكمية المنفذة</th><th>الكمية المتبقية</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>';
   rows.forEach(function(r){var s=STATUS_META[statusOf(r)];var p=pctVal(r);
-    h+='<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td>'+esc(r.main)+'</td><td>'+fmtR(r.total)+'</td>'+
+    h+='<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td>'+esc(r.main)+'</td><td>'+fmtR(r.total)+'</td><td>'+fmtQ(r.qtyExec)+'</td><td>'+fmtQ(r.qtyRem)+'</td>'+
       '<td>'+bar(p,s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';});
   el('topItemsTable').innerHTML=h+'</tbody>';
 }
@@ -593,9 +593,9 @@ function renderTopics(view){
     // table
     var rowsSorted=rows.slice().sort(function(a,b){return b.total-a.total;});
     var body=rowsSorted.map(function(r){var s=STATUS_META[statusOf(r)];
-      return '<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+fmtR(r.total)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';}).join('');
+      return '<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+fmtR(r.total)+'</td><td>'+fmtQ(r.qtyExec)+'</td><td>'+fmtQ(r.qtyRem)+'</td><td>'+bar(pctVal(r),s.color)+'</td><td><span class="pill '+s.cls+'">'+s.lbl+'</span></td></tr>';}).join('');
     tblHtml+='<div class="card"><div class="card-hdr"><div class="card-icon icon-green">'+d[1]+'</div><div><div class="card-title">'+d[0]+'</div><div class="card-sub">'+rows.length+' بند · '+tt.contractCount+' عقد · '+fmtM(tt.total)+' م.ر</div></div></div>'+
-      '<div class="tbl-wrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>البند</th><th>المشروع</th><th>الشركة</th><th>الإجمالي (ريال)</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>'+(body||'<tr><td colspan="6" class="empty">لا بنود مطابِقة</td></tr>')+'</tbody></table></div></div>';
+      '<div class="tbl-wrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>البند</th><th>المشروع</th><th>الشركة</th><th>الإجمالي (ريال)</th><th>الكمية المنفذة</th><th>الكمية المتبقية</th><th>الإنجاز</th><th>الحالة</th></tr></thead><tbody>'+(body||'<tr><td colspan="8" class="empty">لا بنود مطابِقة</td></tr>')+'</tbody></table></div></div>';
   });
   el('topic-hero').innerHTML=hero;
   el('topic-tables').innerHTML=tblHtml;
@@ -639,10 +639,10 @@ function renderNotStarted(view){
     kpi('gray','⛔',fmtN(rows.length),'','بنود لم تبدأ','badge-gray','ملاحظة: لم يتم البدء')+
     kpi('gray','💰',fmtM(val),'م.ر','قيمتها الإجمالية','badge-gray',(view.length?(val/totals(view).total*100).toFixed(1):0)+'% من القيمة')+
     kpi('gray','📑',fmtN(Object.keys(contracts).length),'','عقود متأثرة','badge-gray','');
-  var h='<thead><tr><th>البند</th><th>المشروع</th><th>الشركة</th><th>المجال</th><th>رقم العقد</th><th>القيمة (ريال)</th></tr></thead><tbody>';
+  var h='<thead><tr><th>البند</th><th>المشروع</th><th>الشركة</th><th>المجال</th><th>رقم العقد</th><th>الكمية الإجمالية</th><th>الكمية المتبقية</th><th>القيمة (ريال)</th></tr></thead><tbody>';
   rows.sort(function(a,b){return b.total-a.total;}).forEach(function(r){
-    h+='<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+esc(r.main)+'</td><td>'+esc(r.contract)+'</td><td>'+fmtR(r.total)+'</td></tr>';});
-  if(!rows.length)h+='<tr><td colspan="6" class="empty">لا توجد بنود «لم تبدأ» ضمن الفلاتر الحالية.</td></tr>';
+    h+='<tr><td class="tc">'+esc(r.item)+'</td><td class="tc">'+esc(r.project)+'</td><td class="tc">'+esc(r.company)+'</td><td>'+esc(r.main)+'</td><td>'+esc(r.contract)+'</td><td>'+fmtQ(r.qty)+'</td><td>'+fmtQ(r.qtyRem)+'</td><td>'+fmtR(r.total)+'</td></tr>';});
+  if(!rows.length)h+='<tr><td colspan="8" class="empty">لا توجد بنود «لم تبدأ» ضمن الفلاتر الحالية.</td></tr>';
   el('nsTable').innerHTML=h+'</tbody>';
 }
 
