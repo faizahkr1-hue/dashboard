@@ -119,18 +119,6 @@ body{font-family:'Tajawal',sans-serif;background:var(--off);color:var(--text);di
 .cs-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .cs-leg{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;display:flex;align-items:center;gap:5px}
 @media(max-width:900px){.cs-tiles{grid-template-columns:repeat(3,1fr);gap:10px}.cs-tile{border-left:none}}
-/* pacing — نسخة مبسّطة */
-.pace2-verdict{display:inline-block;font-size:20px;font-weight:900;padding:6px 16px;border-radius:24px;margin-bottom:12px}
-.pace2-sentence{font-size:15px;color:var(--text);line-height:2;margin-bottom:18px}
-.pace2-sentence b{font-weight:800}
-.pace2-bars{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
-.pace2-row{display:grid;grid-template-columns:170px 1fr 58px;align-items:center;gap:14px}
-.pace2-lbl{font-size:13px;font-weight:700;color:var(--text)}
-.pace2-track{height:26px;background:var(--off);border:1px solid var(--border);border-radius:7px;position:relative;overflow:hidden}
-.pace2-fill{position:absolute;right:0;top:0;height:100%;border-radius:7px 0 0 7px;transition:width .5s}
-.pace2-val{font-size:16px;font-weight:900;text-align:left}
-.pace2-rule{font-size:12px;color:var(--muted);background:var(--off);border:1px solid var(--border);border-radius:9px;padding:10px 14px;line-height:1.9}
-@media(max-width:900px){.pace2-row{grid-template-columns:110px 1fr 48px;gap:8px}}
 /* card */
 .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
 .card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
@@ -248,10 +236,6 @@ tbody tr:hover{background:var(--green-20)}
 
   <div id="panel-overview" class="panel active">
     <div class="kpi-grid" id="kpi-row"></div>
-    <div class="card">
-      <div class="card-hdr"><div class="card-icon icon-green">🎯</div><div><div class="card-title">هل المركز يسير حسب الخطة الزمنية؟</div><div class="card-sub">نقارن ما أُنجز فعلاً بما كان يُفترض إنجازه حتى اليوم بحكم مرور الوقت على مدد العقود</div></div></div>
-      <div id="pace-body"></div>
-    </div>
     <div class="card">
       <div class="card-hdr"><div class="card-icon icon-navy">📅</div><div><div class="card-title" id="cs-title">حالة العقود — معامل الأداء الزمني</div><div class="card-sub">معامل الأداء = الإنجاز المالي الفعلي ÷ نسبة الوقت المنقضي &nbsp;·&nbsp; ≥80% على المسار &nbsp;·&nbsp; 50–79% متأخر &nbsp;·&nbsp; &lt;50% متأخر جداً &nbsp;·&nbsp; فترة سماح 60 يوماً للعقود الحديثة</div></div></div>
       <div id="cs-body"></div>
@@ -398,8 +382,7 @@ function applyFilters(){
   var t=totals(view);
   el('match-count').textContent='عدد البنود المطابقة: '+fmtN(t.n)+' بند · '+t.contractCount+' عقد';
   renderKPIs(t);
-  renderHeader(t);
-  renderPacing(view);
+  renderHeader(t,view);
   renderContractStatus(view);
   renderStatusChart(view);
   renderDomainChart(view);
@@ -443,8 +426,8 @@ function renderHR(view){
   if(!rows.length)h+='<tr><td colspan="8" class="empty">لا توجد بنود موارد بشرية ضمن الفلاتر الحالية.</td></tr>';
   el('hrTable').innerHTML=h+'</tbody>';
 }
-/* ---- الأداء مقابل الخطة الزمنية (هل المركز على المسار؟) ---- */
-function renderPacing(view){
+/* ---- الأداء مقابل الخطة الزمنية (مؤشر مبسّط في الرأس) ---- */
+function computePacing(view){
   var now=new Date();var today=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()));
   var startedTotal=0,exec=0,expSum=0;
   view.forEach(function(r){
@@ -457,24 +440,11 @@ function renderPacing(view){
   var actual=startedTotal>0?exec/startedTotal*100:0;
   var expected=startedTotal>0?expSum/startedTotal*100:0;
   var factor=expected>0?actual/expected:0;
-  var gap=actual-expected;
-  var verdict,emoji,color;
-  if(factor>=0.95){verdict='على المسار';emoji='🟢';color='#05764A';}
-  else if(factor>=0.80){verdict='متأخر قليلاً';emoji='🟠';color='#D05418';}
-  else {verdict='متعثّر';emoji='🔴';color='#C0170A';}
-  var behind=gap<-0.05, ahead=gap>0.05;
-  var diff=Math.abs(gap).toFixed(1);
-  var judge=behind?('متأخّر بمقدار <b style="color:'+color+'">'+diff+' نقطة</b> عن الخطة')
-           :ahead?('متقدّم بمقدار <b style="color:#05764A">'+diff+' نقطة</b> على الخطة')
-           :'مطابق تماماً للخطة';
-  el('pace-body').innerHTML=
-    '<div class="pace2-verdict" style="background:'+color+'1a;color:'+color+'">'+emoji+' '+verdict+'</div>'+
-    '<div class="pace2-sentence">حتى اليوم — وبحكم مرور الوقت على العقود — كان <b>المفترض</b> إنجاز <b>'+expected.toFixed(0)+'%</b> من قيمة الأعمال، والمُنجَز <b>فعلاً</b> هو <b>'+actual.toFixed(0)+'%</b>. أي أن المركز '+judge+'.</div>'+
-    '<div class="pace2-bars">'+
-      '<div class="pace2-row"><div class="pace2-lbl">المفترض إنجازه الآن</div><div class="pace2-track"><div class="pace2-fill" style="width:'+expected.toFixed(1)+'%;background:#9AA7B2"></div></div><div class="pace2-val" style="color:#5a6b60">'+expected.toFixed(0)+'%</div></div>'+
-      '<div class="pace2-row"><div class="pace2-lbl">المُنجَز فعلاً</div><div class="pace2-track"><div class="pace2-fill" style="width:'+actual.toFixed(1)+'%;background:'+color+'"></div></div><div class="pace2-val" style="color:'+color+'">'+actual.toFixed(0)+'%</div></div>'+
-    '</div>'+
-    '<div class="pace2-rule">📌 القاعدة ببساطة: إذا كان <b>المُنجَز فعلاً</b> مساوياً لـ<b>المفترض</b> أو أكثر ← 🟢 على المسار &nbsp;·&nbsp; أقل منه قليلاً ← 🟠 متأخر قليلاً &nbsp;·&nbsp; أقل منه بكثير ← 🔴 متعثّر.</div>';
+  var verdict,color;
+  if(factor>=0.95){verdict='على المسار';color='#0a8a54';}
+  else if(factor>=0.80){verdict='متأخر قليلاً';color='#D05418';}
+  else {verdict='متعثّر';color='#C0170A';}
+  return {actual:actual,expected:expected,verdict:verdict,color:color};
 }
 /* ---- حالة العقود (معامل الأداء الزمني) ---- */
 var CS_META=[
@@ -514,9 +484,13 @@ function renderContractStatus(view){
   var legend=CS_META.map(function(m){return '<span class="cs-leg" style="background:'+m.color+'1a;color:'+m.color+'"><span class="cs-dot" style="background:'+m.color+'"></span>'+m.lbl+' ('+counts[m.key]+')</span>';}).join('');
   el('cs-body').innerHTML='<div class="cs-tiles">'+tiles+'</div><div class="cs-bar">'+bar+'</div><div class="cs-legend">'+legend+'</div>';
 }
-function renderHeader(t){
+function renderHeader(t,view){
   el('hdr-stats').textContent=fmtN(t.n)+' بند  |  '+t.contractCount+' عقد';
-  el('hdr-pct').textContent='الإنجاز: '+t.pct.toFixed(1)+'%';
+  var pc=computePacing(view||currentView());
+  var pill=el('hdr-pct');
+  pill.innerHTML='الإنجاز '+pc.actual.toFixed(0)+'%  ·  '+pc.verdict;
+  pill.style.background=pc.color;pill.style.color='#fff';
+  pill.title='المُنجَز فعلاً '+pc.actual.toFixed(1)+'% مقابل المفترض زمنياً '+pc.expected.toFixed(1)+'%';
 }
 function renderKPIs(t){
   var completed=RAW.filter(function(r){return !r.active;}).length;
