@@ -215,7 +215,6 @@ tbody tr:hover{background:var(--green-20)}
   </div>
   <div class="hdr-meta">
     <span class="hdr-pill pill-outline" id="hdr-stats">—</span>
-    <span class="hdr-pill pill-green" id="hdr-pct">—</span>
     <label class="btn-upload">⬆️ تحديث من إكسل<input type="file" accept=".xlsx,.xls" style="display:none" onchange="loadExcel(this)"></label>
   </div>
 </div>
@@ -564,11 +563,6 @@ function renderContractStatus(view){
 }
 function renderHeader(t,view){
   el('hdr-stats').textContent=fmtN(t.n)+' بند  |  '+t.contractCount+' عقد';
-  var pc=computePacing(view||currentView());
-  var pill=el('hdr-pct');
-  pill.innerHTML='الإنجاز '+pc.actual.toFixed(0)+'%  ·  '+pc.verdict;
-  pill.style.background=pc.color;pill.style.color='#fff';
-  pill.title='المُنجَز فعلاً '+pc.actual.toFixed(1)+'% مقابل المفترض زمنياً '+pc.expected.toFixed(1)+'%';
 }
 function renderKPIs(t){
   var completed=RAW.filter(function(r){return !r.active;}).length;
