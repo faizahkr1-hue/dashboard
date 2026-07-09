@@ -489,6 +489,7 @@ function computePacing(view){
   return {actual:actual,expected:expected,verdict:verdict,color:color};
 }
 /* ---- مشاريع تحتاج تدخلاً طارئاً ---- */
+function arMonths(m){if(m<=0)return 'أقل من شهر';if(m===1)return 'شهر واحد';if(m===2)return 'شهران';if(m<=10)return m+' أشهر';return m+' شهراً';}
 function renderUrgent(view){
   var now=new Date();var today=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()));
   var g={};
@@ -518,9 +519,8 @@ function renderUrgent(view){
       '<div class="urg-mid"><div class="urg-name">'+esc(it.project)+'</div><div class="urg-sub">'+esc(it.company)+' · '+esc(it.sector)+' · '+it.n+' بند</div></div>'+
       '<div class="urg-metrics">'+
         m(it.comp.toFixed(0)+'%','الإنجاز')+
-        m('−'+it.gap.toFixed(0)+' نقطة','التأخر',sev)+
         m(fmtM(it.rem)+' م','المتبقي')+
-        m(it.ended?'انتهت':it.daysLeft.toLocaleString('en-US')+' يوم','الوقت',it.ended?'#C0170A':null)+
+        m(it.ended?'انتهت':arMonths(Math.round(it.daysLeft/30.44)),'الوقت المتبقي',it.ended?'#C0170A':null)+
       '</div>'+
     '</div>';}).join('');
 }
