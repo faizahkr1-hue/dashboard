@@ -69,6 +69,8 @@ body{font-family:'Tajawal',sans-serif;background:var(--off);color:var(--text);di
 .pill-outline{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.2)}
 .btn-upload{cursor:pointer;background:var(--lime);color:#1a2b22;font-weight:800;font-size:12px;padding:8px 16px;border-radius:20px;border:none;font-family:inherit;display:flex;align-items:center;gap:6px}
 .btn-upload:hover{filter:brightness(1.05)}
+.btn-download{cursor:pointer;background:rgba(255,255,255,.12);color:#fff;font-weight:800;font-size:12px;padding:8px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.28);font-family:inherit;display:flex;align-items:center;gap:6px}
+.btn-download:hover{background:rgba(255,255,255,.2)}
 .brand-stripe{height:4px;background:linear-gradient(90deg,var(--green) 0%,var(--green) 45%,var(--lime) 45%,var(--lime) 65%,var(--orange) 65%,var(--orange) 85%,var(--navy) 85%)}
 .container{max-width:1300px;margin:0 auto;padding:20px 20px 60px}
 /* filters */
@@ -216,6 +218,7 @@ tbody tr:hover{background:var(--green-20)}
   <div class="hdr-meta">
     <span class="hdr-pill pill-outline" id="hdr-stats">—</span>
     <label class="btn-upload">⬆️ تحديث من إكسل<input type="file" accept=".xlsx,.xls" style="display:none" onchange="loadExcel(this)"></label>
+    <button class="btn-download" onclick="downloadUpdated()">⬇️ تنزيل نسخة محدَّثة</button>
   </div>
 </div>
 <div class="brand-stripe"></div>
@@ -828,6 +831,26 @@ function loadExcel(input){
   reader.readAsArrayBuffer(file);input.value='';
 }
 function toast(msg,color){var t=el('toast');t.style.background=color;t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},3500);}
+
+/* ================= تنزيل نسخة محدَّثة مستقلة ================= */
+function downloadUpdated(){
+  try{
+    var html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+    var marker='/*__DATA__*/';
+    var i=html.indexOf(marker);
+    var j=html.indexOf('var RAW',i);
+    if(i<0||j<0){toast('❌ تعذّر إنشاء النسخة','#C0170A');return;}
+    // استبدال البيانات المضمّنة بالبيانات الحالية (المُباشَرة في الذاكرة)
+    var newHtml=html.slice(0,i)+marker+JSON.stringify(RAW)+';\n'+html.slice(j);
+    var blob=new Blob([newHtml],{type:'text/html;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;
+    a.download='لوحة_تحليل_المشاريع_'+new Date().toISOString().slice(0,10)+'.html';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},3000);
+    toast('⬇️ تم تنزيل نسخة مستقلة بالبيانات الحالية','#05764A');
+  }catch(err){toast('❌ خطأ: '+err.message,'#C0170A');}
+}
 
 /* ================= حفظ/استعادة آخر نسخة (localStorage) ================= */
 function showLastUpdate(dt){var e=el('last-update');if(e&&dt)e.textContent='آخر نسخة مرفوعة: '+dt.toLocaleDateString('ar-EG')+' '+dt.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});}
