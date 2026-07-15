@@ -225,7 +225,10 @@ tbody tr:hover{background:var(--green-20)}
   <div class="filters">
     <div class="filters-top">
       <div class="filters-title">🔎 الفلاتر</div>
-      <div style="font-size:10px;color:var(--muted)" id="last-update">—</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:10px;color:var(--muted)" id="last-update"></span>
+        <button id="btn-reset-data" onclick="resetData()" style="display:none;cursor:pointer;background:var(--off);border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:10px;padding:4px 10px;border-radius:8px;font-family:inherit">↺ استعادة البيانات الأصلية</button>
+      </div>
     </div>
     <div class="filters-grid">
       <div class="fld"><label>المجال الرئيسي</label><select id="f-main" onchange="onMainChange()"></select></div>
@@ -813,18 +816,43 @@ function loadExcel(input){
       if(doneName)rows=rows.concat(sheetToRows(wb.Sheets[doneName],false));
       if(!rows.length||rows.every(function(r){return r.total===0;})){toast('❌ لم تُقرأ قيم — تحقق من أسماء الأعمدة','#C0170A');return;}
       RAW=rows;
+      var savedOk=true;
+      try{localStorage.setItem('weqaa_dash_data',JSON.stringify(rows));localStorage.setItem('weqaa_dash_ts',new Date().toISOString());}catch(err2){savedOk=false;}
       initFilters();
       resetFilters();
-      var d=new Date();el('last-update').textContent='آخر تحديث: '+d.toLocaleDateString('ar-EG')+' '+d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-      toast('✅ تم تحميل '+rows.filter(function(r){return r.active;}).length+' بند بنجاح','#05764A');
+      showLastUpdate(new Date());
+      var bd=el('btn-reset-data');if(bd)bd.style.display='inline-block';
+      toast((savedOk?'✅ تم تحميل وحفظ ':'✅ تم تحميل ')+rows.filter(function(r){return r.active;}).length+' بند'+(savedOk?' — ستبقى النسخة عند إعادة الفتح':''),'#05764A');
     }catch(err){toast('❌ خطأ: '+err.message,'#C0170A');console.error(err);}
   };
   reader.readAsArrayBuffer(file);input.value='';
 }
 function toast(msg,color){var t=el('toast');t.style.background=color;t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},3500);}
 
+/* ================= حفظ/استعادة آخر نسخة (localStorage) ================= */
+function showLastUpdate(dt){var e=el('last-update');if(e&&dt)e.textContent='آخر نسخة مرفوعة: '+dt.toLocaleDateString('ar-EG')+' '+dt.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});}
+function loadSaved(){
+  try{
+    var s=localStorage.getItem('weqaa_dash_data');if(!s)return false;
+    var arr=JSON.parse(s);if(!arr||!arr.length)return false;
+    RAW=arr;
+    var ts=localStorage.getItem('weqaa_dash_ts');if(ts)showLastUpdate(new Date(ts));
+    var bd=el('btn-reset-data');if(bd)bd.style.display='inline-block';
+    return true;
+  }catch(e){return false;}
+}
+function resetData(){
+  try{localStorage.removeItem('weqaa_dash_data');localStorage.removeItem('weqaa_dash_ts');}catch(e){}
+  RAW=EMBEDDED.slice();
+  var bd=el('btn-reset-data');if(bd)bd.style.display='none';
+  el('last-update').textContent='';
+  initFilters();resetFilters();
+  toast('↺ تمت استعادة البيانات الأصلية','#304258');
+}
+
 /* ================= التشغيل ================= */
 window.addEventListener('DOMContentLoaded',function(){
+  loadSaved();
   initFilters();
   applyFilters();
 });
